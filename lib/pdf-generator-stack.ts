@@ -1,16 +1,25 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { Stack, StackProps, aws_lambda_nodejs, aws_apigateway } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class PdfGeneratorStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    const api = new aws_apigateway.RestApi(this, 'Api');
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'PdfGeneratorQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    api.root.addMethod('ANY');
+    const fn = new aws_lambda_nodejs.NodejsFunction(this, 'PdfFileConverter', {
+      entry: 'src/handler/pdfFileConverter.ts',
+      handler: 'main',
+      description: 'Function to convert to a PDF file.'
+    });
+
+    const books = api.root.addResource('pdf');
+    const postPdfIntegration = new aws_apigateway.LambdaIntegration(fn);
+    books.addMethod('POST', postPdfIntegration);
+    books.addMethod('GET', postPdfIntegration);
+
+
+
   }
 }
